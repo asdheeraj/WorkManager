@@ -1,42 +1,57 @@
 package com.dheeraj.workmanager
 
-import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.graphics.Color
 
 
-class NotifyWorker(context:Context,parameters: WorkerParameters) : Worker(context,parameters) {
+class NotifyWorker(private val context: Context, parameters: WorkerParameters) : Worker(context,parameters) {
 
     override fun doWork(): Result {
+        Log.d(TAG,"In do work")
         triggerNotification()
         return Result.success()
     }
 
     private fun triggerNotification(){
 
-        val mBuilder = NotificationCompat.Builder(applicationContext)
+        val notificationId = 234
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val channelId = "my_channel_01"
+        val name = "my_channel"
+        val description = "This is my channel"
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, name, importance)
+            channel.description = description
+            channel.enableLights(true)
+            channel.lightColor = Color.RED
+            channel.enableVibration(true)
+            channel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
+            channel.setShowBadge(false)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context,channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("My notification")
             .setContentText("Hello World!")
 
+        with(notificationManager){
+            notify(notificationId,builder.build())
+        }
+    }
 
-        // Gets an instance of the NotificationManager service//
-
-        val mNotificationManager =
-
-            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
-
-        // When you issue multiple notifications about the same type of event,
-        // it’s best practice for your app to try to update an existing notification
-        // with this new information, rather than immediately creating a new notification.
-        // If you want to update this notification at a later date, you need to assign it an ID.
-        // You can then use this ID whenever you issue a subsequent notification.
-        // If the previous notification is still visible, the system will update this existing notification,
-        // rather than create a new one. In this example, the notification’s ID is 001//
-
-     mNotificationManager?.notify(1, mBuilder.build())
+    companion object {
+         val TAG = NotifyWorker::class.java.simpleName
     }
 
 }
